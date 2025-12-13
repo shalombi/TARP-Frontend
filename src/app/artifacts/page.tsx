@@ -9,7 +9,11 @@ type ArtifactListItem = {
   type: string;
   visibility: string;
   createdAt?: string;
-  lab?: { id: string; name: string; center?: { id: string; name: string } | null };
+  lab?: {
+    id: string;
+    name: string;
+    center?: { id: string; name: string } | null;
+  };
 };
 
 type SearchResultItem = {
@@ -23,6 +27,12 @@ type SearchResultItem = {
   labName: string;
   centerName: string | null;
   score: number;
+  reason?: string | null;
+  evidence?: {
+    field: 'title' | 'description';
+    snippet: string;
+    snippetScore: number;
+  } | null;
 };
 
 type SearchResponse = {
@@ -30,11 +40,13 @@ type SearchResponse = {
   results: SearchResultItem[];
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL!
+const API = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 export default function ArtifactsPage() {
   const [q, setQ] = useState('');
-  const [items, setItems] = useState<(ArtifactListItem | SearchResultItem)[]>([]);
+  const [items, setItems] = useState<(ArtifactListItem | SearchResultItem)[]>(
+    [],
+  );
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'list' | 'semantic'>('list');
 
@@ -45,9 +57,8 @@ export default function ArtifactsPage() {
       setMode('semantic');
       const u = new URL('/search', API);
       u.searchParams.set('q', query);
-      u.searchParams.set('limit', '20');
-      // u.searchParams.set('centerId', '...');
-      // u.searchParams.set('labId', '...');
+      u.searchParams.set('limit', '70');
+      u.searchParams.set('explain', 'true');
       return u.toString();
     }
 
@@ -58,7 +69,6 @@ export default function ArtifactsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    console.log('url',url)
 
     fetch(url)
       .then((r) => r.json())
@@ -79,28 +89,40 @@ export default function ArtifactsPage() {
     return () => {
       cancelled = true;
     };
-  }, [url, mode])
+  }, [url, mode]);
 
   function relevanceLabel(score: number) {
     if (score >= 0.5) return 'Highly relevant';
     if (score >= 0.25) return 'Related';
-    return null;
+    return 'Low relevance';
   }
-  
+
   return (
     <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>TARP – Artifacts</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
+        TARP – Artifacts
+      </h1>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search… (e.g., tokenizer)"
-          style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 8,
+            border: '1px solid #ddd',
+          }}
         />
         <button
           onClick={() => setQ('')}
-          style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd', background: 'white' }}
+          style={{
+            padding: '10px 12px',
+            borderRadius: 8,
+            border: '1px solid #ddd',
+            background: 'white',
+          }}
         >
           Clear
         </button>
@@ -112,11 +134,15 @@ export default function ArtifactsPage() {
         <div style={{ display: 'grid', gap: 12 }}>
           {items.map((a) => {
             const isSemantic = mode === 'semantic';
-            const score = isSemantic ? (a as SearchResultItem).score : null;
+            const semanticItem = a as SearchResultItem;
+            const score = isSemantic ? semanticItem.score : null;
 
-            const labName = isSemantic ? (a as SearchResultItem).labName : (a as ArtifactListItem).lab?.name;
+            const labName = isSemantic
+              ? semanticItem.labName
+              : (a as ArtifactListItem).lab?.name;
+
             const centerName = isSemantic
-              ? (a as SearchResultItem).centerName
+              ? semanticItem.centerName
               : (a as ArtifactListItem).lab?.center?.name;
 
             return (
@@ -129,10 +155,24 @@ export default function ArtifactsPage() {
                   background: 'white',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
                   <div style={{ fontWeight: 700 }}>{a.title}</div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, opacity: 0.85 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      fontSize: 12,
+                      opacity: 0.85,
+                    }}
+                  >
                     {isSemantic && score !== null && (
                       <span
                         style={{
@@ -152,21 +192,47 @@ export default function ArtifactsPage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 8, opacity: 0.9 }}>{a.description}</div>
+                <div style={{ marginTop: 8, opacity: 0.9 }}>
+                  {a.description}
+                </div>
 
                 <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
-                  Lab: {labName || '—'} {centerName ? `• Center: ${centerName}` : ''}
+                  Lab: {labName || '—'}
+                  {centerName ? ` • Center: ${centerName}` : ''}
                 </div>
-                {score && (
-  <span className="badge">
-    {relevanceLabel(score)}
-  </span>
-)}
+
+                {isSemantic && semanticItem.evidence?.snippet && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: 13,
+                      padding: '8px 10px',
+                      borderRadius: 10,
+                      border: '1px solid #eee',
+                      background: '#fafafa',
+                      opacity: 0.9,
+                    }}
+                    title={`snippetScore=${semanticItem.evidence.snippetScore.toFixed(
+                      4,
+                    )}`}
+                  >
+                    <strong>Why this result:</strong>{' '}
+                    “{semanticItem.evidence.snippet}”
+                  </div>
+                )}
+
+                {isSemantic && semanticItem.reason ? (
+                  <div style={{ marginTop: 8, fontSize: 13, opacity: 0.85 }}>
+                    <strong>Why:</strong> {semanticItem.reason}
+                  </div>
+                ) : null}
               </div>
             );
           })}
 
-          {items.length === 0 && <div style={{ opacity: 0.7 }}>No results found.</div>}
+          {items.length === 0 && (
+            <div style={{ opacity: 0.7 }}>No results found.</div>
+          )}
         </div>
       )}
     </main>
