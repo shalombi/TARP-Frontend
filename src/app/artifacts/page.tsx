@@ -70,38 +70,64 @@ export default function ArtifactsPage() {
     const query = q.trim();
 
     if (query) {
-      setMode('semantic');
       const u = new URL('/search', API);
       u.searchParams.set('q', query);
       u.searchParams.set('limit', '70');
       u.searchParams.set('explain', 'true');
-      return u.toString();
+      return { url: u.toString(), mode: 'semantic' as const };
     }
 
-    setMode('list');
-    return new URL('/artifacts', API).toString();
+    return { url: new URL('/artifacts', API).toString(), mode: 'list' as const };
   }, [q]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setMode(url.mode);
 
-    fetch(url)
+    console.log('Fetching artifacts:', { url: url.url, mode: url.mode });
+
+    fetch(url.url, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
       .then((r) => {
         if (!r.ok) {
           console.error('Fetch failed:', r.status, r.statusText);
+          const errorText = r.text().catch(() => 'Unknown error');
           throw new Error(`HTTP error! status: ${r.status}`);
         }
         return r.json();
       })
       .then((data) => {
-        if (cancelled) return;
+        if (cancelled) {
+          console.log('Request cancelled, ignoring response');
+          return;
+        }
 
-        if (mode === 'semantic') {
+        console.log('Artifacts data received:', { 
+          mode: url.mode, 
+          dataLength: Array.isArray(data) ? data.length : 'not array',
+          isArray: Array.isArray(data),
+          dataType: typeof data,
+          data: data 
+        });
+
+        if (url.mode === 'semantic') {
           const res = data as SearchResponse;
-          setItems(Array.isArray(res?.results) ? res.results : []);
+          const results = Array.isArray(res?.results) ? res.results : [];
+          console.log('Setting semantic results:', results.length);
+          if (!cancelled) {
+            setItems(results);
+          }
         } else {
-          setItems(Array.isArray(data) ? data : []);
+          const items = Array.isArray(data) ? data : [];
+          console.log('Setting list items:', items.length);
+          if (!cancelled) {
+            setItems(items);
+          }
         }
       })
       .catch((error) => {
@@ -111,13 +137,15 @@ export default function ArtifactsPage() {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [url, mode]);
+  }, [url]);
 
   function relevanceLabel(score: number) {
     if (score >= 0.5) return 'Highly relevant';
