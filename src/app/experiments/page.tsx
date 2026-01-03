@@ -224,7 +224,14 @@ export default function ExperimentsPage() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{exp.title}</h3>
+                  <Link
+                    href={`/experiments/${exp.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#2563eb', cursor: 'pointer' }}>
+                      {exp.title}
+                    </h3>
+                  </Link>
                   <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>{exp.description}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

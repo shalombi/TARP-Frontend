@@ -287,7 +287,7 @@ export default function ArtifactsPage() {
                           fontWeight: 600,
                           color: '#667eea',
                         }}
-                        title={`${commentCount} ${commentCount === 1 ? 'תגובה' : 'תגובות'}`}
+                        title={`${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}`}
                       >
                         💬 {commentCount}
                       </span>
@@ -394,13 +394,13 @@ export default function ArtifactsPage() {
         >
           <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: '#1e293b' }}>
-            דיונים פתוחים
+            Open Discussions
           </div>
           <div style={{ fontSize: 14 }}>
-            לחץ על artifact כדי לראות ולהוסיף תגובות
+            Click on an artifact to view and add comments
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: '#94a3b8' }}>
-            💡 Artifacts עם תגובות מסומנים עם נקודה כחולה
+            💡 Artifacts with comments are marked with a blue dot
           </div>
         </div>
       )}
