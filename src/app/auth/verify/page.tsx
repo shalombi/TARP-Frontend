@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function VerifyPage() {
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshToken } = useAuth();
@@ -34,6 +34,14 @@ export default function VerifyPage() {
     <main style={{ padding: 24, textAlign: 'center', marginTop: 100 }}>
       <div>Verifying your email...</div>
     </main>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyContent />
+    </Suspense>
   );
 }
 

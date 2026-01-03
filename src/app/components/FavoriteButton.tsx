@@ -48,10 +48,14 @@ export default function FavoriteButton({
         setIsFavorite(false);
         onToggle?.(false);
       } else {
-        await fetch(`${API}/favorites/${artifactId}`, {
+        const response = await fetch(`${API}/favorites/${artifactId}`, {
           method: 'POST',
           credentials: 'include',
         });
+        if (!response.ok) {
+          console.error('Failed to add favorite:', response.status, response.statusText);
+          throw new Error('Failed to add favorite');
+        }
         setIsFavorite(true);
         onToggle?.(true);
       }

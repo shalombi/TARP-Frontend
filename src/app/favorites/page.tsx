@@ -44,16 +44,24 @@ export default function FavoritesPage() {
       return;
     }
 
-    if (!user) {
+    if (!user || authLoading) {
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     fetch(`${API}/favorites`, {
       credentials: 'include',
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          console.error('Favorites API error:', r.status, r.statusText);
+          throw new Error(`API Error: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data: FavoritesResponse) => {
+        console.log('Favorites data:', data); // Debug log
         setFavorites(Array.isArray(data?.favorites) ? data.favorites : []);
       })
       .catch((error) => {
@@ -63,20 +71,31 @@ export default function FavoritesPage() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [user, isAuthenticated, authLoading, router]);
 
   const handleRemoveFavorite = (artifactId: string) => {
     setFavorites((prev) => prev.filter((f) => f.artifactId !== artifactId));
   };
 
   const refreshFavorites = () => {
-    if (!user) return;
+    if (!user) {
+      console.log('refreshFavorites: No user');
+      return;
+    }
 
+    console.log('refreshFavorites: Fetching favorites for user:', user.id);
     fetch(`${API}/favorites`, {
       credentials: 'include',
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          console.error('Refresh favorites API error:', r.status);
+          throw new Error(`API Error: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data: FavoritesResponse) => {
+        console.log('Refresh favorites data:', data);
         setFavorites(Array.isArray(data?.favorites) ? data.favorites : []);
       })
       .catch((error) => {
@@ -85,7 +104,7 @@ export default function FavoritesPage() {
   };
 
   return (
-    <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
+    <main style={{ padding: 32, maxWidth: 1200, margin: '0 auto' }}>
       <div
         style={{
           display: 'flex',
@@ -190,6 +209,9 @@ export default function FavoritesPage() {
                         onToggle={(isFavorite) => {
                           if (!isFavorite) {
                             handleRemoveFavorite(a.id);
+                          } else {
+                            // Refresh favorites list when a favorite is added
+                            refreshFavorites();
                           }
                         }}
                       />

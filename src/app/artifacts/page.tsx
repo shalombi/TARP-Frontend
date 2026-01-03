@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FavoriteButton from '../components/FavoriteButton';
+import CommentsSection from '../components/CommentsSection';
 import { useAuth } from '../contexts/AuthContext';
 
 type ArtifactListItem = {
@@ -16,6 +17,9 @@ type ArtifactListItem = {
     id: string;
     name: string;
     center?: { id: string; name: string } | null;
+  };
+  _count?: {
+    comments: number;
   };
 };
 
@@ -54,6 +58,7 @@ export default function ArtifactsPage() {
   );
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'list' | 'semantic'>('list');
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -121,7 +126,7 @@ export default function ArtifactsPage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
+    <main style={{ padding: 32, maxWidth: 1200, margin: '0 auto' }}>
       <div
         style={{
           display: 'flex',
@@ -189,16 +194,46 @@ export default function ArtifactsPage() {
               ? semanticItem.centerName
               : (a as ArtifactListItem).lab?.center?.name;
 
+            const commentCount = (a as ArtifactListItem)._count?.comments || 0;
+            const hasComments = commentCount > 0;
+            
             return (
               <div
                 key={a.id}
                 style={{
-                  border: '1px solid #eee',
+                  border: selectedArtifactId === a.id 
+                    ? '2px solid #667eea' 
+                    : hasComments 
+                    ? '1px solid rgba(102, 126, 234, 0.3)' 
+                    : '1px solid #eee',
                   borderRadius: 12,
                   padding: 14,
-                  background: 'white',
+                  background: selectedArtifactId === a.id 
+                    ? '#f8fafc' 
+                    : hasComments 
+                    ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' 
+                    : 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  position: 'relative',
                 }}
+                onClick={() => setSelectedArtifactId(selectedArtifactId === a.id ? null : a.id)}
               >
+                {hasComments && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: '#667eea',
+                      boxShadow: '0 0 8px rgba(102, 126, 234, 0.6)',
+                      animation: 'pulse 2s infinite',
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     display: 'flex',
@@ -207,7 +242,28 @@ export default function ArtifactsPage() {
                     alignItems: 'flex-start',
                   }}
                 >
-                  <div style={{ fontWeight: 700, flex: 1 }}>{a.title}</div>
+                  <div style={{ fontWeight: 700, flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {a.title}
+                    {commentCount > 0 && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '2px 8px',
+                          borderRadius: 12,
+                          background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+                          border: '1px solid rgba(102, 126, 234, 0.3)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#667eea',
+                        }}
+                        title={`${commentCount} ${commentCount === 1 ? 'תגובה' : 'תגובות'}`}
+                      >
+                        💬 {commentCount}
+                      </span>
+                    )}
+                  </div>
 
                   <div
                     style={{
@@ -285,6 +341,38 @@ export default function ArtifactsPage() {
           {items.length === 0 && (
             <div style={{ opacity: 0.7 }}>No results found.</div>
           )}
+        </div>
+      )}
+
+      {/* Comments Section */}
+      {selectedArtifactId && (
+        <div style={{ marginTop: 32 }}>
+          <CommentsSection artifactId={selectedArtifactId} />
+        </div>
+      )}
+      
+      {!selectedArtifactId && items.length > 0 && (
+        <div
+          style={{
+            marginTop: 32,
+            padding: 24,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            borderRadius: 12,
+            border: '1px solid rgba(148, 163, 184, 0.2)',
+            textAlign: 'center',
+            color: '#64748b',
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: '#1e293b' }}>
+            דיונים פתוחים
+          </div>
+          <div style={{ fontSize: 14 }}>
+            לחץ על artifact כדי לראות ולהוסיף תגובות
+          </div>
+          <div style={{ marginTop: 12, fontSize: 12, color: '#94a3b8' }}>
+            💡 Artifacts עם תגובות מסומנים עם נקודה כחולה
+          </div>
         </div>
       )}
     </main>
