@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import FavoriteButton from '../components/FavoriteButton';
+import { useAuth } from '../contexts/AuthContext';
 
 type ArtifactListItem = {
   id: string;
@@ -40,15 +43,23 @@ type SearchResponse = {
   results: SearchResultItem[];
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL!;
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 export default function ArtifactsPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [items, setItems] = useState<(ArtifactListItem | SearchResultItem)[]>(
     [],
   );
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'list' | 'semantic'>('list');
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const url = useMemo(() => {
     const query = q.trim();
@@ -71,7 +82,13 @@ export default function ArtifactsPage() {
     setLoading(true);
 
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          console.error('Fetch failed:', r.status, r.statusText);
+          throw new Error(`HTTP error! status: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         if (cancelled) return;
 
@@ -80,6 +97,12 @@ export default function ArtifactsPage() {
           setItems(Array.isArray(res?.results) ? res.results : []);
         } else {
           setItems(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error fetching data:', error);
+          setItems([]);
         }
       })
       .finally(() => {
@@ -99,9 +122,30 @@ export default function ArtifactsPage() {
 
   return (
     <main style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
-        TARP – Artifacts
-      </h1>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
+        <h1 style={{ fontSize: 28, fontWeight: 700 }}>TARP – Artifacts</h1>
+        <a
+          href="/favorites"
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: '1px solid #ddd',
+            background: 'white',
+            textDecoration: 'none',
+            color: 'inherit',
+            fontSize: 14,
+          }}
+        >
+          ⭐ My Favorites
+        </a>
+      </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <input
@@ -160,9 +204,10 @@ export default function ArtifactsPage() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     gap: 12,
+                    alignItems: 'flex-start',
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>{a.title}</div>
+                  <div style={{ fontWeight: 700, flex: 1 }}>{a.title}</div>
 
                   <div
                     style={{
@@ -173,6 +218,13 @@ export default function ArtifactsPage() {
                       opacity: 0.85,
                     }}
                   >
+                    {user && (
+                      <FavoriteButton
+                        artifactId={a.id}
+                        userId={user.id}
+                        size="small"
+                      />
+                    )}
                     {isSemantic && score !== null && (
                       <span
                         style={{
