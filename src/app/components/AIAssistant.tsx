@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
+import { createChatSocket, Socket } from '../../lib/websocket';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -25,6 +26,7 @@ export default function AIAssistant({ contextType }: AIAssistantProps) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,9 +42,65 @@ export default function AIAssistant({ contextType }: AIAssistantProps) {
     }
   }, [isOpen]);
 
+  // Initialize WebSocket connection
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    // Create socket connection
+    const socket = createChatSocket();
+    socketRef.current = socket;
+
+    // Listen for responses
+    socket.on('message:response', (data: { response: string; artifacts?: any[]; experiments?: any[] }) => {
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+          newMessages[lastIndex] = {
+            role: 'assistant',
+            content: data.response,
+            artifacts: data.artifacts,
+            experiments: data.experiments,
+          };
+        }
+        return newMessages;
+      });
+      setLoading(false);
+    });
+
+    // Listen for errors
+    socket.on('error', (error: { message: string }) => {
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+          newMessages[lastIndex] = {
+            role: 'assistant',
+            content: `Error: ${error.message}`,
+          };
+        }
+        return newMessages;
+      });
+      setLoading(false);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [isAuthenticated, user]);
+
   const handleSend = async () => {
     const message = input.trim();
     if (!message || loading) return;
+
+    // Check if socket is connected
+    if (!socketRef.current || !socketRef.current.connected) {
+      // Fallback to REST API if WebSocket is not available
+      await handleSendREST(message);
+      return;
+    }
 
     // Add user message
     const userMessage: Message = { role: 'user', content: message };
@@ -50,8 +108,28 @@ export default function AIAssistant({ contextType }: AIAssistantProps) {
     setInput('');
     setLoading(true);
 
-    // Add placeholder for assistant message (for streaming)
-    const assistantMessageId = Date.now();
+    // Add placeholder for assistant message
+    const assistantMessage: Message = {
+      role: 'assistant',
+      content: '',
+      artifacts: undefined,
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    // Send message via WebSocket
+    socketRef.current.emit('message', {
+      message,
+      contextType: contextType,
+    });
+  };
+
+  // Fallback to REST API if WebSocket fails
+  const handleSendREST = async (message: string) => {
+    const userMessage: Message = { role: 'user', content: message };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
     const assistantMessage: Message = {
       role: 'assistant',
       content: '',
@@ -65,51 +143,48 @@ export default function AIAssistant({ contextType }: AIAssistantProps) {
         content: m.content,
       }));
 
-      // Helper function to make authenticated request
-      const makeRequest = async (retry = true, useStreaming = true) => {
-        const response = await fetch(`${API}/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            message,
-            conversationHistory,
-            stream: useStreaming, // Try streaming first
-            contextType: contextType, // Send context type
-          }),
-        });
+      // Handle 401 - try to refresh token and retry
+      let response = await fetch(`${API}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          message,
+          conversationHistory,
+          stream: true,
+          contextType: contextType,
+        }),
+      });
 
-        // Handle 401 - try to refresh token and retry
-        if (response.status === 401 && retry) {
-          const refreshed = await refreshToken();
-          if (refreshed) {
-            // Retry once after refresh
-            return makeRequest(false, useStreaming);
-          } else {
-            // Refresh failed, redirect to login
-            window.location.href = '/auth/login?error=session_expired';
-            throw new Error('Session expired. Please login again.');
-          }
+      if (response.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          // Retry once after refresh
+          response = await fetch(`${API}/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              message,
+              conversationHistory,
+              stream: true,
+              contextType: contextType,
+            }),
+          });
+        } else {
+          // Refresh failed, redirect to login
+          window.location.href = '/auth/login?error=session_expired';
+          throw new Error('Session expired. Please login again.');
         }
+      }
 
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          throw new Error(`Failed to get response: ${response.status} - ${errorText}`);
-        }
-
-        return response;
-      };
-
-      // Try streaming first, fallback to regular if it fails
-      let response;
-      try {
-        response = await makeRequest(true, true);
-      } catch (error: any) {
-        console.warn('Streaming failed, trying regular request:', error);
-        // Fallback to non-streaming
-        response = await makeRequest(true, false);
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to get response: ${response.status} - ${errorText}`);
       }
 
       // Check if response is streaming (text/event-stream) or regular JSON

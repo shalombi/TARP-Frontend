@@ -3,6 +3,9 @@
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import AIAssistant from './AIAssistant';
+import OnlineUsers from './OnlineUsers';
+import ConnectionStatus from './ConnectionStatus';
+import ToastContainer from './Toast';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -37,6 +40,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
       </main>
       {contextType && <AIAssistant contextType={contextType} />}
+      <OnlineUsers />
+      <ConnectionStatus />
+      <ToastContainer />
     </div>
   );
 }

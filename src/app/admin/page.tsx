@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
+import Loader from '../components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -59,6 +60,8 @@ export default function AdminPage() {
   const [selectedLab, setSelectedLab] = useState<string>('');
   const [labMembers, setLabMembers] = useState<LabMember[]>([]);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showNames, setShowNames] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRoleInLab, setSelectedRoleInLab] = useState<string>('MEMBER');
 
@@ -75,6 +78,7 @@ export default function AdminPage() {
 
     if (user && user.role === 'ADMIN') {
       loadData();
+      loadSettings();
     }
   }, [authLoading, isAuthenticated, router, user]);
 
@@ -133,6 +137,45 @@ export default function AdminPage() {
       loadLabMembers(selectedLab);
     }
   }, [selectedLab]);
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch(`${API}/settings/presence:show-names`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShowNames(data.showNames);
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
+
+  const toggleShowNames = async () => {
+    setLoadingSettings(true);
+    try {
+      const response = await fetch(`${API}/settings/presence:show-names`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ showNames: !showNames }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShowNames(data.showNames);
+        setError(null);
+      } else {
+        throw new Error('Failed to update setting');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to update setting');
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
 
   const loadLabMembers = async (labId: string) => {
     try {
@@ -296,6 +339,62 @@ export default function AdminPage() {
           {error}
         </div>
       )}
+
+      {/* Privacy Settings */}
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 16,
+          border: '1px solid rgba(148, 163, 184, 0.2)',
+          padding: 24,
+          marginBottom: 24,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        }}
+      >
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
+          Privacy Settings
+        </h2>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            background: '#f8fafc',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: '#111827' }}>
+              Show User Names in Presence
+            </div>
+            <div style={{ fontSize: 13, color: '#64748b' }}>
+              {showNames
+                ? 'User names are visible to other users in the same lab'
+                : 'User names are hidden - only "User" and ID are shown'}
+            </div>
+          </div>
+          <button
+            onClick={toggleShowNames}
+            disabled={loadingSettings}
+            style={{
+              padding: '10px 24px',
+              background: showNames ? '#10b981' : '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 600,
+              cursor: loadingSettings ? 'not-allowed' : 'pointer',
+              fontSize: 14,
+              transition: 'all 0.2s',
+              opacity: loadingSettings ? 0.6 : 1,
+            }}
+          >
+            {loadingSettings ? 'Updating...' : showNames ? 'Hide Names' : 'Show Names'}
+          </button>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         {/* Lab Selection and Members */}
