@@ -30,53 +30,32 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ padding: '40px 48px', maxWidth: 1400, margin: '0 auto' }}>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 28,
-              boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
-            }}
-          >
-            👋
-          </div>
-          <div>
-            <h1
-              style={{
-                fontSize: 40,
-                fontWeight: 800,
-                marginBottom: 4,
-                background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '-0.5px',
-              }}
-            >
-              Welcome back, {user?.name || 'Researcher'}!
-            </h1>
-            <p style={{ fontSize: 16, color: '#64748b', fontWeight: 500 }}>
-              Here's an overview of your research activities
-            </p>
-          </div>
-        </div>
+    <div style={{ padding: '48px 56px', maxWidth: 1600, margin: '0 auto' }}>
+      <div style={{ marginBottom: 48 }}>
+        <h1
+          style={{
+            fontSize: 36,
+            fontWeight: 800,
+            marginBottom: 8,
+            color: '#111827',
+            letterSpacing: '-1px',
+            lineHeight: 1.2,
+          }}
+        >
+          Welcome back, {user?.name || 'Researcher'}
+        </h1>
+        <p style={{ fontSize: 16, color: '#6b7280', fontWeight: 400 }}>
+          Overview of your research activities and platform insights
+        </p>
       </div>
 
       {/* Stats Cards */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: 20,
-          marginBottom: 32,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 24,
+          marginBottom: 48,
         }}
       >
         <StatCard
@@ -110,15 +89,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
+      <div style={{ marginBottom: 48 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20, color: '#111827', letterSpacing: '-0.3px' }}>
           Quick Actions
         </h2>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 16,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 20,
           }}
         >
           <QuickActionCard
@@ -154,18 +133,19 @@ export default function DashboardPage() {
 
       {/* Recent Activity */}
       <div>
-        <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20, color: '#111827', letterSpacing: '-0.3px' }}>
           Recent Activity
         </h2>
         <div
           style={{
             background: 'white',
-            borderRadius: 12,
-            border: '1px solid #eee',
-            padding: 24,
+            borderRadius: 16,
+            border: '1px solid #e5e7eb',
+            padding: 32,
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
           }}
         >
-          <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: 48, color: '#9ca3af', fontSize: 14 }}>
             No recent activity
           </div>
         </div>
@@ -191,61 +171,47 @@ function StatCard({
     <Link
       href={href}
       style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        background: 'white',
         borderRadius: 16,
-        border: '1px solid rgba(148, 163, 184, 0.2)',
+        border: '1px solid #e5e7eb',
         padding: 28,
         textDecoration: 'none',
         color: 'inherit',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'block',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.12)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
         e.currentTarget.style.borderColor = color;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
+        e.currentTarget.style.borderColor = '#e5e7eb';
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          top: -20,
-          right: -20,
-          width: 80,
-          height: 80,
-          borderRadius: '50%',
-          background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-          opacity: 0.6,
-        }}
-      />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 10, fontWeight: 600, letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, fontWeight: 500, letterSpacing: '0.2px', textTransform: 'uppercase' }}>
             {title}
           </div>
-          <div style={{ fontSize: 36, fontWeight: 800, color, letterSpacing: '-1px' }}>{value}</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: '#111827', letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
         </div>
         <div
           style={{
-            fontSize: 48,
-            opacity: 0.15,
-            filter: 'grayscale(100%)',
-            transition: 'all 0.3s',
+            fontSize: 40,
+            opacity: 0.2,
+            transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.25';
-            e.currentTarget.style.filter = 'grayscale(0%)';
+            e.currentTarget.style.opacity = '0.3';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '0.15';
-            e.currentTarget.style.filter = 'grayscale(100%)';
+            e.currentTarget.style.opacity = '0.2';
           }}
         >
           {icon}
@@ -274,45 +240,46 @@ function QuickActionCard({
       style={{
         background: 'white',
         borderRadius: 16,
-        border: '1px solid rgba(148, 163, 184, 0.2)',
+        border: '1px solid #e5e7eb',
         padding: 24,
         textDecoration: 'none',
         color: 'inherit',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'block',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = color;
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = `0 12px 32px ${color}20`;
-        e.currentTarget.style.background = `linear-gradient(135deg, ${color}08 0%, white 100%)`;
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+        e.currentTarget.style.background = '#fafafa';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        e.currentTarget.style.borderColor = '#e5e7eb';
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
         e.currentTarget.style.background = 'white';
       }}
     >
       <div
         style={{
-          fontSize: 36,
+          fontSize: 32,
           marginBottom: 16,
-          transition: 'transform 0.3s',
+          transition: 'transform 0.2s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+          e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+          e.currentTarget.style.transform = 'scale(1)';
         }}
       >
         {icon}
       </div>
-      <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, color: '#1e293b' }}>{title}</div>
-      <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{description}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: '#111827', letterSpacing: '-0.2px' }}>{title}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>{description}</div>
     </Link>
   );
 }

@@ -11,11 +11,24 @@ type Experiment = {
   id: string;
   title: string;
   description: string;
-  status: string;
+  metadata: {
+    status?: string;
+    tags?: string[];
+    parameters?: Record<string, any>;
+  };
   createdAt: string;
   lab?: {
     id: string;
     name: string;
+    center?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  createdBy?: {
+    id: string;
+    name: string;
+    email: string;
   };
 };
 
@@ -24,6 +37,55 @@ export default function ExperimentsPage() {
   const router = useRouter();
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadExperiments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API}/experiments`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load experiments');
+      }
+
+      const data = await response.json();
+      setExperiments(data);
+    } catch (error: any) {
+      console.error('Failed to load experiments:', error);
+      setError(error.message || 'Failed to load experiments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this experiment?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      const response = await fetch(`${API}/experiments/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete experiment');
+      }
+
+      // Reload experiments
+      await loadExperiments();
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete experiment');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -36,8 +98,7 @@ export default function ExperimentsPage() {
       return;
     }
 
-    // TODO: Replace with actual API call
-    setLoading(false);
+    loadExperiments();
   }, [authLoading, isAuthenticated, router, user]);
 
   if (authLoading || loading) {
@@ -99,7 +160,22 @@ export default function ExperimentsPage() {
         </Link>
       </div>
 
-      {experiments.length === 0 ? (
+      {error && (
+        <div
+          style={{
+            padding: '16px',
+            borderRadius: 8,
+            background: '#fee2e2',
+            border: '1px solid #fecaca',
+            color: '#991b1b',
+            marginBottom: 24,
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {experiments.length === 0 && !loading ? (
         <div
           style={{
             background: 'white',
@@ -150,26 +226,83 @@ export default function ExperimentsPage() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
-                <div>
+                <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{exp.title}</h3>
-                  <p style={{ fontSize: 14, color: '#666' }}>{exp.description}</p>
+                  <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>{exp.description}</p>
                 </div>
-                <span
-                  style={{
-                    padding: '4px 12px',
-                    borderRadius: 12,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background: exp.status === 'active' ? '#d1fae5' : '#f3f4f6',
-                    color: exp.status === 'active' ? '#065f46' : '#374151',
-                  }}
-                >
-                  {exp.status}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      background:
+                        exp.metadata?.status === 'active'
+                          ? '#d1fae5'
+                          : exp.metadata?.status === 'completed'
+                            ? '#dbeafe'
+                            : exp.metadata?.status === 'paused'
+                              ? '#fef3c7'
+                              : '#f3f4f6',
+                      color:
+                        exp.metadata?.status === 'active'
+                          ? '#065f46'
+                          : exp.metadata?.status === 'completed'
+                            ? '#1e40af'
+                            : exp.metadata?.status === 'paused'
+                              ? '#92400e'
+                              : '#374151',
+                    }}
+                  >
+                    {exp.metadata?.status || 'planning'}
+                  </span>
+                  {exp.createdBy?.id === user?.id && (
+                    <button
+                      onClick={() => handleDelete(exp.id)}
+                      disabled={deletingId === exp.id}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: deletingId === exp.id ? '#cbd5e1' : '#fee2e2',
+                        color: deletingId === exp.id ? '#64748b' : '#991b1b',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: deletingId === exp.id ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {deletingId === exp.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               </div>
-              {exp.lab && (
-                <div style={{ fontSize: 13, color: '#999', marginTop: 8 }}>
-                  Lab: {exp.lab.name}
+              <div style={{ fontSize: 13, color: '#999', marginTop: 8 }}>
+                {exp.lab && (
+                  <>
+                    Lab: {exp.lab.name}
+                    {exp.lab.center && ` • Center: ${exp.lab.center.name}`}
+                  </>
+                )}
+                {exp.createdBy && ` • Created by: ${exp.createdBy.name}`}
+              </div>
+              {exp.metadata?.tags && exp.metadata.tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {exp.metadata.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: '#e0e7ff',
+                        color: '#4338ca',
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>

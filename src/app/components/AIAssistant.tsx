@@ -9,9 +9,14 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   artifacts?: Array<{ id: string; title: string; description: string | null }>;
+  experiments?: Array<{ id: string; title: string; description: string | null }>;
 };
 
-export default function AIAssistant() {
+interface AIAssistantProps {
+  contextType: 'artifacts' | 'experiments';
+}
+
+export default function AIAssistant({ contextType }: AIAssistantProps) {
   const { user, isAuthenticated, refreshToken } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -71,6 +76,7 @@ export default function AIAssistant() {
             message,
             conversationHistory,
             stream: useStreaming, // Try streaming first
+            contextType: contextType, // Send context type
           }),
         });
 
@@ -146,14 +152,29 @@ export default function AIAssistant() {
                   if (data.artifacts) {
                     artifacts = data.artifacts;
                   }
+                  if (data.experiments) {
+                    // Handle experiments if context type is experiments
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      const lastMsg = newMessages[newMessages.length - 1];
+                      if (lastMsg.role === 'assistant') {
+                        lastMsg.experiments = data.experiments;
+                      }
+                      return newMessages;
+                    });
+                  }
                   if (data.done) {
-                    // Final update with artifacts
+                    // Final update with context items
                     setMessages((prev) => {
                       const newMessages = [...prev];
                       const lastMsg = newMessages[newMessages.length - 1];
                       if (lastMsg.role === 'assistant') {
                         lastMsg.content = fullResponse || 'I apologize, but I could not generate a response.';
-                        lastMsg.artifacts = artifacts;
+                        if (contextType === 'artifacts') {
+                          lastMsg.artifacts = artifacts;
+                        } else if (contextType === 'experiments') {
+                          lastMsg.experiments = data.experiments || [];
+                        }
                       }
                       return newMessages;
                     });
@@ -193,7 +214,11 @@ export default function AIAssistant() {
             const lastMsg = newMessages[newMessages.length - 1];
             if (lastMsg.role === 'assistant') {
               lastMsg.content = responseText;
-              lastMsg.artifacts = data.artifacts;
+              if (contextType === 'artifacts') {
+                lastMsg.artifacts = data.artifacts;
+              } else if (contextType === 'experiments') {
+                lastMsg.experiments = data.experiments;
+              }
             }
             return newMessages;
           });
@@ -244,30 +269,32 @@ export default function AIAssistant() {
           onClick={() => setIsOpen(true)}
           style={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
-            width: 64,
-            height: 64,
+            bottom: 32,
+            right: 32,
+            width: 60,
+            height: 60,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: '#2563eb',
             border: 'none',
             color: 'white',
-            fontSize: 28,
+            fontSize: 26,
             cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
             zIndex: 1000,
-            transition: 'all 0.3s',
+            transition: 'all 0.2s',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.6)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(37, 99, 235, 0.4)';
+            e.currentTarget.style.background = '#1d4ed8';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+            e.currentTarget.style.background = '#2563eb';
           }}
         >
           🤖
@@ -279,25 +306,25 @@ export default function AIAssistant() {
         <div
           style={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
+            bottom: 32,
+            right: 32,
             width: 420,
             height: 600,
             borderRadius: 16,
             background: 'white',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
             zIndex: 1001,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
+            border: '1px solid #e5e7eb',
           }}
         >
           {/* Header */}
           <div
             style={{
-              padding: '16px 20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '20px 24px',
+              background: '#111827',
               color: 'white',
               display: 'flex',
               justifyContent: 'space-between',
@@ -305,26 +332,35 @@ export default function AIAssistant() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 24 }}>🤖</div>
+              <div style={{ fontSize: 22 }}>🤖</div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>AI Research Assistant</div>
-                <div style={{ fontSize: 12, opacity: 0.9 }}>Ask me anything about artifacts</div>
+                <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.2px' }}>AI Research Assistant</div>
+                <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+                  Ask about {contextType === 'artifacts' ? 'artifacts' : 'experiments'}
+                </div>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 color: 'white',
                 width: 32,
                 height: 32,
                 borderRadius: 8,
                 cursor: 'pointer',
-                fontSize: 18,
+                fontSize: 20,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
               }}
             >
               ×
@@ -336,24 +372,42 @@ export default function AIAssistant() {
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '20px',
-              background: '#f8fafc',
+              padding: '24px',
+              background: '#ffffff',
             }}
           >
             {messages.length === 0 ? (
               <div
                 style={{
                   textAlign: 'center',
-                  color: '#64748b',
-                  padding: '40px 20px',
+                  color: '#6b7280',
+                  padding: '48px 20px',
                 }}
               >
-                <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
-                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-                  Welcome to AI Assistant!
+                <div style={{ fontSize: 48, marginBottom: 20 }}>👋</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: '#111827' }}>
+                  Welcome to AI Assistant
                 </div>
-                <div style={{ fontSize: 14 }}>
-                  Ask me about artifacts, research, or anything related to the platform.
+                <div style={{ fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
+                  Ask me about {contextType === 'artifacts' ? 'artifacts' : 'experiments'}, research, or anything related to the platform.
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: '#92400e',
+                    background: '#fef3c7',
+                    padding: '12px 16px',
+                    borderRadius: 12,
+                    border: '1px solid #fde68a',
+                    marginTop: 12,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: '#78350f' }}>⚠️ Accuracy Notice</div>
+                  <div style={{ lineHeight: 1.5 }}>
+                    AI responses are based on available {contextType === 'artifacts' ? 'artifacts' : 'experiments'} and may contain inaccuracies. 
+                    Always verify critical information from original sources.
+                  </div>
                 </div>
               </div>
             ) : (
@@ -370,17 +424,17 @@ export default function AIAssistant() {
                   <div
                     style={{
                       maxWidth: '80%',
-                      padding: '12px 16px',
-                      borderRadius: 16,
+                      padding: '14px 18px',
+                      borderRadius: 12,
                       background: msg.role === 'user' 
-                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                        : 'white',
-                      color: msg.role === 'user' ? 'white' : '#1e293b',
+                        ? '#2563eb'
+                        : '#f3f4f6',
+                      color: msg.role === 'user' ? 'white' : '#111827',
                       boxShadow: msg.role === 'user' 
-                        ? '0 2px 8px rgba(102, 126, 234, 0.3)'
-                        : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        ? '0 2px 8px rgba(37, 99, 235, 0.2)'
+                        : '0 1px 3px rgba(0, 0, 0, 0.1)',
                       fontSize: 14,
-                      lineHeight: 1.5,
+                      lineHeight: 1.6,
                       whiteSpace: 'pre-wrap',
                     }}
                   >
@@ -392,10 +446,10 @@ export default function AIAssistant() {
                         marginTop: 8,
                         maxWidth: '80%',
                         fontSize: 12,
-                        color: '#64748b',
+                        color: '#6b7280',
                       }}
                     >
-                      <div style={{ fontWeight: 600, marginBottom: 4 }}>📚 Relevant artifacts:</div>
+                      <div style={{ fontWeight: 600, marginBottom: 6, color: '#111827' }}>📚 Relevant artifacts:</div>
                       {msg.artifacts.slice(0, 3).map((art) => (
                         <a
                           key={art.id}
@@ -406,31 +460,88 @@ export default function AIAssistant() {
                           }}
                           style={{
                             display: 'block',
-                            padding: '8px 12px',
-                            marginBottom: 4,
-                            background: '#f1f5f9',
-                            borderRadius: 8,
-                            border: '1px solid #e2e8f0',
+                            padding: '10px 14px',
+                            marginBottom: 6,
+                            background: 'white',
+                            borderRadius: 10,
+                            border: '1px solid #e5e7eb',
                             textDecoration: 'none',
                             color: 'inherit',
                             transition: 'all 0.2s',
                             cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#e2e8f0';
-                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.background = '#f9fafb';
+                            e.currentTarget.style.borderColor = '#2563eb';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#f1f5f9';
-                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
                           }}
                         >
-                          <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 2 }}>
+                          <div style={{ fontWeight: 600, color: '#111827', marginBottom: 2 }}>
                             {art.title}
                           </div>
                           {art.description && (
-                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
                               {art.description.slice(0, 100)}...
+                            </div>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {msg.experiments && msg.experiments.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        maxWidth: '80%',
+                        fontSize: 12,
+                        color: '#6b7280',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 6, color: '#111827' }}>⚗️ Relevant experiments:</div>
+                      {msg.experiments.slice(0, 3).map((exp) => (
+                        <a
+                          key={exp.id}
+                          href={`/experiments?highlight=${exp.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.location.href = `/experiments?highlight=${exp.id}`;
+                          }}
+                          style={{
+                            display: 'block',
+                            padding: '10px 14px',
+                            marginBottom: 6,
+                            background: 'white',
+                            borderRadius: 10,
+                            border: '1px solid #e5e7eb',
+                            textDecoration: 'none',
+                            color: 'inherit',
+                            transition: 'all 0.2s',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#f9fafb';
+                            e.currentTarget.style.borderColor = '#2563eb';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: '#111827', marginBottom: 2 }}>
+                            {exp.title}
+                          </div>
+                          {exp.description && (
+                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                              {exp.description.slice(0, 100)}...
                             </div>
                           )}
                         </a>
@@ -441,8 +552,8 @@ export default function AIAssistant() {
               ))
             )}
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
-                <div style={{ fontSize: 20 }}>🤖</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6b7280', fontSize: 14 }}>
+                <div style={{ fontSize: 18 }}>🤖</div>
                 <div>Thinking...</div>
               </div>
             )}
@@ -452,12 +563,12 @@ export default function AIAssistant() {
           {/* Input */}
           <div
             style={{
-              padding: '16px',
+              padding: '20px',
               background: 'white',
-              borderTop: '1px solid #e2e8f0',
+              borderTop: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               <input
                 ref={inputRef}
                 type="text"
@@ -468,28 +579,45 @@ export default function AIAssistant() {
                 disabled={loading}
                 style={{
                   flex: 1,
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   borderRadius: 12,
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e5e7eb',
                   fontSize: 14,
                   outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#2563eb';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
                 }}
               />
               <button
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px 24px',
                   borderRadius: 12,
                   border: 'none',
                   background: loading || !input.trim()
-                    ? '#cbd5e1'
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    ? '#d1d5db'
+                    : '#2563eb',
                   color: 'white',
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && input.trim()) {
+                    e.currentTarget.style.background = '#1d4ed8';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && input.trim()) {
+                    e.currentTarget.style.background = '#2563eb';
+                  }
                 }}
               >
                 Send

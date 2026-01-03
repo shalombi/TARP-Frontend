@@ -14,6 +14,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // Determine context type based on current page
+  let contextType: 'artifacts' | 'experiments' | null = null;
+  if (pathname?.startsWith('/artifacts')) {
+    contextType = 'artifacts';
+  } else if (pathname?.startsWith('/experiments')) {
+    contextType = 'experiments';
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
@@ -22,24 +30,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           marginLeft: 280,
           flex: 1,
           minHeight: '100vh',
-          background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+          background: '#ffffff',
           position: 'relative',
         }}
       >
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '200px',
-            background: 'linear-gradient(180deg, rgba(102, 126, 234, 0.03) 0%, transparent 100%)',
-            pointerEvents: 'none',
-          }}
-        />
         <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
       </main>
-      <AIAssistant />
+      {contextType && <AIAssistant contextType={contextType} />}
     </div>
   );
 }
