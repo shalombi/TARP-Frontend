@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import FavoriteButton from '../components/FavoriteButton';
 import CommentsSection from '../components/CommentsSection';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from '../components/Loader';
 
 type ArtifactListItem = {
   id: string;
@@ -206,7 +207,7 @@ export default function ArtifactsPage() {
       </div>
 
       {loading ? (
-        <div>Loading…</div>
+        <Loader text="Loading artifacts..." />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
           {items.map((a) => {

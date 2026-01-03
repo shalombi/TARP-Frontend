@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FavoriteButton from '../components/FavoriteButton';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from '../components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -131,9 +132,7 @@ export default function FavoritesPage() {
       </div>
 
       {loading ? (
-        <div style={{ padding: 24, textAlign: 'center', opacity: 0.7 }}>
-          Loading favorites…
-        </div>
+        <Loader text="Loading favorites..." />
       ) : favorites.length === 0 ? (
         <div
           style={{

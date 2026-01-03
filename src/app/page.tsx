@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './contexts/AuthContext';
 import Link from 'next/link';
+import Loader from './components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -18,11 +19,7 @@ export default function DashboardPage() {
   }, [authLoading, isAuthenticated, router]);
 
   if (authLoading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading dashboard..." />;
   }
 
   if (!isAuthenticated) {

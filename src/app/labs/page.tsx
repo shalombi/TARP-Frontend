@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from '../components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -45,11 +46,7 @@ export default function LabsPage() {
   }, [authLoading, isAuthenticated, router]);
 
   if (authLoading || loading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading labs..." />;
   }
 
   return (

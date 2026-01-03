@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from '../components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -48,11 +49,7 @@ function SearchContent() {
   };
 
   if (authLoading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading search..." />;
   }
 
   return (
@@ -112,9 +109,7 @@ function SearchContent() {
       </form>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <div>Searching...</div>
-        </div>
+        <Loader text="Searching artifacts..." />
       ) : results.length > 0 ? (
         <div style={{ display: 'grid', gap: 16 }}>
           {results.map((result) => (

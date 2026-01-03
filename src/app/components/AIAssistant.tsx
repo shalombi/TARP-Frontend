@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from './Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -552,9 +553,8 @@ export default function AIAssistant({ contextType }: AIAssistantProps) {
               ))
             )}
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6b7280', fontSize: 14 }}>
-                <div style={{ fontSize: 18 }}>🤖</div>
-                <div>Thinking...</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 0' }}>
+                <Loader size="small" text="AI is thinking..." />
               </div>
             )}
             <div ref={messagesEndRef} />

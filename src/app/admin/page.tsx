@@ -248,11 +248,7 @@ export default function AdminPage() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading admin panel..." />;
   }
 
   if (!isAuthenticated || user?.role !== 'ADMIN') {

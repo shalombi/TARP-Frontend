@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import Loader from '../../components/Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -201,11 +202,7 @@ export default function NewExperimentPage() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading..." />;
   }
 
   if (!isAuthenticated) {
@@ -311,8 +308,8 @@ export default function NewExperimentPage() {
               Lab *
             </label>
             {loading ? (
-              <div style={{ padding: '12px 16px', color: '#64748b', fontSize: 14 }}>
-                Loading labs...
+              <div style={{ padding: '12px 16px' }}>
+                <Loader size="small" text="Loading labs..." />
               </div>
             ) : labs.length === 0 ? (
               <div

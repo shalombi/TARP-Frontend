@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from './Loader';
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
@@ -458,11 +459,7 @@ export default function CommentsSection({ artifactId }: CommentsSectionProps) {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>
-        Loading comments...
-      </div>
-    );
+    return <Loader text="Loading comments..." />;
   }
 
   return (

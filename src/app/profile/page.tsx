@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import Loader from '../components/Loader';
 
 export default function ProfilePage() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
@@ -25,11 +26,7 @@ export default function ProfilePage() {
   }, [user]);
 
   if (authLoading) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading profile..." />;
   }
 
   if (!user) {
